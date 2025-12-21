@@ -16,14 +16,14 @@ BaselineOfUnpoly >> baseline: spec [
 			seasideExtras: spec.
 
 		spec
-			package: 'Unpoly-Core2' with: [ spec requires: #('Bootstrap5-Core' 'SeasideExtras-Bootstrap' 'SeasideExtras-Javascript') ];
-			package: 'Unpoly-Placeholders2' with: [ spec requires: #('Unpoly-Core2') ];
-			package: 'Unpoly-Examples2' with: [ spec requires: #('Unpoly-Placeholders2' 'Seaside3-Welcome' ) ].
+			package: 'Unpoly-Core' with: [ spec requires: #('Bootstrap5-Core' 'SeasideExtras-Bootstrap' 'SeasideExtras-Javascript') ];
+			package: 'Unpoly-Placeholders' with: [ spec requires: #('Unpoly-Core') ];
+			package: 'Unpoly-Examples' with: [ spec requires: #('Unpoly-Placeholders' 'Seaside3-Welcome' ) ].
 
 		spec
-			group: 'Core' with: #('Unpoly-Core2');
-			group: 'Placeholders' with: #('Unpoly-Placeholders2');
-			group: 'Examples' with: #('Unpoly-Examples2');
+			group: 'Core' with: #('Unpoly-Core');
+			group: 'Placeholders' with: #('Unpoly-Placeholders');
+			group: 'Examples' with: #('Unpoly-Examples');
 			group: 'default' with: #('Examples') ]
 ]
 
