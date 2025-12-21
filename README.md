@@ -22,3 +22,5 @@ Metacello new
 
 ## Examples
 The examples browser demonstrates most of the wrapped behavior. Browse `UpExamplesBrowser` for further information.
+
+<img width="1152" height="1032" alt="image" src="https://github.com/user-attachments/assets/37e07cde-a732-4a1e-8b16-083346e233fb" />
