@@ -18,8 +18,7 @@ UpExamplesBrowser class >> contextRoot [
 { #category : 'class initialization' }
 UpExamplesBrowser class >> initialize [
 
-	self register.
-	[ (Delay forSeconds: 5) wait. self openBrowser] fork
+	self register
 ]
 
 { #category : 'utilities' }
