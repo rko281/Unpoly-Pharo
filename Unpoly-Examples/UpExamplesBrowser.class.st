@@ -1,13 +1,18 @@
 Class {
 	#name : 'UpExamplesBrowser',
-	#superclass : 'UpRootComponent',
+	#superclass : 'UpComponent',
 	#instVars : [
-		'currentExample',
-		'examples'
+		'currentExample'
 	],
 	#category : 'Unpoly-Examples',
 	#package : 'Unpoly-Examples'
 }
+
+{ #category : 'testing' }
+UpExamplesBrowser class >> canBeRoot [
+
+	^true
+]
 
 { #category : 'accessing' }
 UpExamplesBrowser class >> contextRoot [
@@ -19,11 +24,6 @@ UpExamplesBrowser class >> contextRoot [
 UpExamplesBrowser class >> initialize [
 
 	self register
-]
-
-{ #category : 'utilities' }
-UpExamplesBrowser class >> openBrowser [
-	WebBrowser openOn: 'http://localhost:8080/', self contextRoot
 ]
 
 { #category : 'class initialization' }
@@ -46,7 +46,21 @@ UpExamplesBrowser >> acceptToolbar [
 { #category : 'accessing' }
 UpExamplesBrowser >> children [
 
-	^Array with: currentExample
+	^self currentExample
+		ifNil: [#()]
+		ifNotNil: [ :child | Array with: child]
+]
+
+{ #category : 'accessing' }
+UpExamplesBrowser >> currentExample [
+
+	^currentExample contents
+]
+
+{ #category : 'accessing' }
+UpExamplesBrowser >> currentExample: anUpComponent [
+
+	currentExample contents: anUpComponent
 ]
 
 { #category : 'accessing' }
@@ -84,14 +98,14 @@ UpExamplesBrowser >> initialize [
 
 	(self addDecoration: UpNotificationDecoration new) anchorRight.
 			
-	examples := IdentityDictionary new.
-	self exampleClasses do: [ :each | each initializeSession: self session]
+	self exampleClasses do: [ :each | each initializeSession: self session].
+	currentExample := WAValueHolder new
 ]
 
-{ #category : 'accessing' }
+{ #category : 'operations' }
 UpExamplesBrowser >> navigateToExampleClass: aClass [
 
-	currentExample := (examples at: aClass ifAbsentPut: [aClass new])
+	self currentExample: aClass new
 ]
 
 { #category : 'operations' }
@@ -121,7 +135,7 @@ UpExamplesBrowser >> renderContentOn: html [
 { #category : 'rendering' }
 UpExamplesBrowser >> renderExampleOn: html [
 
-	currentExample ifNotNil: [html render: currentExample]
+	self currentExample ifNotNil: [ :child | html render: child]
 ]
 
 { #category : 'rendering' }
@@ -193,10 +207,18 @@ UpExamplesBrowser >> renderToolbarOn: html [
 									with: 'Extra server delay']]]
 ]
 
+{ #category : 'accessing' }
+UpExamplesBrowser >> states [
+
+	^{currentExample}
+]
+
 { #category : 'hooks' }
 UpExamplesBrowser >> style [
 
-	^currentExample style
+	^self currentExample
+		ifNil: [super style] 
+		ifNotNil: [ :child | child style]
 ]
 
 { #category : 'accessing' }

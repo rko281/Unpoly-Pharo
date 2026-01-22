@@ -1,9 +1,24 @@
 Class {
 	#name : 'UpCompanyPresenter',
 	#superclass : 'UpExamplePresenter',
+	#instVars : [
+		'companyProjects'
+	],
 	#category : 'Unpoly-Examples',
 	#package : 'Unpoly-Examples'
 }
+
+{ #category : 'hooks' }
+UpCompanyPresenter >> children [
+
+	^super children, {self companyProjects}
+]
+
+{ #category : 'accessing' }
+UpCompanyPresenter >> companyProjects [
+
+	^companyProjects ifNil: [companyProjects := UpCompanyProjects on: self model]
+]
 
 { #category : 'rendering' }
 UpCompanyPresenter >> renderContentOn: html [
@@ -18,5 +33,5 @@ UpCompanyPresenter >> renderContentOn: html [
 
 	html div 
 		id: 'projects';
-		with: [html render: (UpCompanyProjects on: self model)]
+		with: [html render: self companyProjects]
 ]

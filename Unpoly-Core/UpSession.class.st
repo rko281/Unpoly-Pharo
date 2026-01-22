@@ -2,8 +2,8 @@ Class {
 	#name : 'UpSession',
 	#superclass : 'WASession',
 	#instVars : [
-		'layerHost',
 		'layers',
+		'layerCount',
 		'notification'
 	],
 	#category : 'Unpoly-Core',
@@ -13,9 +13,7 @@ Class {
 { #category : 'add/remove' }
 UpSession >> addLayer: aLayer [
 
-	aLayer parent: self topLayer.
-
-	^self layers addLast: aLayer
+	^self layers add: aLayer
 ]
 
 { #category : 'initialization' }
@@ -39,23 +37,14 @@ UpSession >> initialize [
 
 	super initialize.
 
-	layers := OrderedCollection new
+	layers := OrderedCollection new.
+	layerCount := 0
 ]
 
-{ #category : 'accessing' }
-UpSession >> layerHost [
-
-	"The UpComponent which hosts new layers"
-
-	^layerHost
-]
-
-{ #category : 'accessing' }
-UpSession >> layerHost: anUpComponent [
-
-	"The UpComponent which hosts new layers"
-
-	layerHost := anUpComponent
+{ #category : 'initialization' }
+UpSession >> initializeFilters [
+	super initializeFilters.
+	self addFilter: UpNoTabFilter new
 ]
 
 { #category : 'accessing' }
@@ -71,16 +60,9 @@ UpSession >> layers [
 ]
 
 { #category : 'accessing' }
-UpSession >> nextLayerIdOn: html [
+UpSession >> nextLayerId [
 
-	| id |
-
-	"Skip the 'id' part"
-	id := html nextId allButFirst: 2.
-
-	^self layers isEmpty 
-		ifTrue: ['layer', id]
-		ifFalse: [self layers last id, '.', id]
+	^'layer', (layerCount := layerCount + 1) asString
 ]
 
 { #category : 'accessing' }
@@ -122,16 +104,6 @@ UpSession >> popNotification [
 UpSession >> removeLayer: aLayer [
 
 	^self layers remove: aLayer
-]
-
-{ #category : 'accessing' }
-UpSession >> topLayer [
-
-	"A stack"
-
-	^self layers isEmpty 
-		ifTrue: [nil]
-		ifFalse: [self layers last]
 ]
 
 { #category : 'handling' }

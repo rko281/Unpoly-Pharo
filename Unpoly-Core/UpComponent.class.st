@@ -1,16 +1,47 @@
 Class {
 	#name : 'UpComponent',
 	#superclass : 'SBSComponent',
+	#instVars : [
+		'parent'
+	],
 	#category : 'Unpoly-Core',
 	#package : 'Unpoly-Core'
 }
 
-{ #category : 'configuring' }
-UpComponent >> beLayerHost [
+{ #category : 'accessing' }
+UpComponent class >> contextRoot [
+	"Return a string representing the context root name (part of the URL) to access this component as a standalone application"
 
-	"Configure the receiver as the host component for opening new layers"
+	^self error: 'root component classes must implement contextRoot'
+]
 
-	self session layerHost: self
+{ #category : 'utilities' }
+UpComponent class >> openBrowser [
+	WebBrowser openOn: 'http://localhost:8080/', self contextRoot
+]
+
+{ #category : 'utilities' }
+UpComponent class >> register [
+
+	| app decorators |
+
+	app := WAAdmin register: self asApplicationAt: self contextRoot.
+
+	app
+		addLibrary: SBSDeploymentLibrary;
+		addLibrary: UpDeploymentLibrary;
+		addLibrary: UpBootstrap5Library.
+
+	"UpDeploymentLibrary breaks the standard Seaside toolbar (needs investigating)"
+	decorators := app preferenceAt: #rootDecorationClasses.
+	app preferenceAt: #rootDecorationClasses put: (decorators reject: [:each | each key = #WAToolDecoration]).
+
+	^app 
+		sessionClass: UpSession;
+		preferenceAt: #renderPhaseContinuationClass put: UpRenderPhaseContinuation;
+		preferenceAt: #initialContinuationClass put: UpInitialRenderLoopContinuation;
+		preferenceAt: #trackingStrategy put: UpSessionTrackingStrategy new;
+		yourself
 ]
 
 { #category : 'accessing' }
@@ -19,16 +50,44 @@ UpComponent >> database [
 	^self session properties at: #database
 ]
 
+{ #category : 'accessing' }
+UpComponent >> expiredSessionUrl [
+
+	"Answer the URL of the page to show when a session has expired.
+	Default - just go back to the root"
+
+	^self class contextRoot
+]
+
+{ #category : 'initialization' }
+UpComponent >> initialize [
+
+	super initialize.
+
+	self isRoot ifTrue: [self addDecoration: UpRootComponentDecoration new]
+]
+
 { #category : 'testing' }
 UpComponent >> isInLayer [
 
-	^self layer notNil
+	^self layerDecoration notNil
+]
+
+{ #category : 'testing' }
+UpComponent >> isRoot [
+
+	"Am I a root application?
+	Default - if I can be a root, I am"
+
+	^self class canBeRoot
 ]
 
 { #category : 'accessing' }
 UpComponent >> layer [
 
-	^self upLayerDecoration ifNotNil: [ :layerDecoration | layerDecoration layer]
+	"Answer the UpLayer in which the receiver exists or nil if none"
+
+	^self layerDecoration ifNotNil: [ :layerDecoration | layerDecoration layer]
 ]
 
 { #category : 'accessing' }
@@ -48,15 +107,45 @@ UpComponent >> layerContextAt: aSymbol ifAbsent: aBlock [
 { #category : 'accessing' }
 UpComponent >> layerDecoration [
 
-	^self decoration isDecoration
-		ifTrue: [self decoration upLayerDecoration]
-		ifFalse: [nil]
+	"Answer the UpLayerDecoration wrapping the receiver (either directly or in its parent hierarchy) or nil if none"
+
+	^self decoration upLayerDecoration ifNil: 
+		[parent isNil ifFalse: [parent layerDecoration]]
+]
+
+{ #category : 'rendering' }
+UpComponent >> renderWithContext: aRenderContext [
+
+	"UpComponents need to traverse their parents for later detection"
+
+	parent := aRenderContext upCurrentComponent.
+	aRenderContext upCurrentComponent: self.
+	[super renderWithContext: aRenderContext] ensure: [aRenderContext upCurrentComponent: parent]
 ]
 
 { #category : 'rendering' }
 UpComponent >> rendererClass [
 
 	^UpHtmlCanvas
+]
+
+{ #category : 'testing' }
+UpComponent >> shouldDisableUnpolyCaching [
+
+	"Answer whether the receiver should disable all Unpoly caching.
+	By default caching is DISABLED.
+	The reasoning is that Seaside workflow typically involves callbacks with side-effects so caching is undesirable.
+	Disabling caching also disables preloading of links which can be dangerous where following a link invokes a callaback causing a state change on the server.
+
+	Override to return false to enable default Unpoly caching; note you may then need to set the following on individual elements to prevent unsafe behaviour:
+		upCache:
+		upPreload:
+		upMethod: 
+
+	https://unpoly.com/caching
+	https://unpoly.com/preloading"
+
+	^true
 ]
 
 { #category : 'delegation' }
@@ -70,7 +159,7 @@ UpComponent >> show: aComponent onAnswer: aBlock delegation: aDelegation [
 { #category : 'accessing' }
 UpComponent >> upLayerDecoration [
 
-	^self decoration ~~ self
-		ifTrue: [self decoration upLayerDecoration]
-		ifFalse: [nil]
+	"Polymorphic with WADecoration"
+
+	^nil
 ]

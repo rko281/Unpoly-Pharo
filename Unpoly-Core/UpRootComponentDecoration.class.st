@@ -1,12 +1,31 @@
 Class {
-	#name : 'UpLayerHostDecoration',
+	#name : 'UpRootComponentDecoration',
 	#superclass : 'UpDecoration',
 	#category : 'Unpoly-Core',
 	#package : 'Unpoly-Core'
 }
 
+{ #category : 'updating' }
+UpRootComponentDecoration >> addUnauthorizedRequestHandlerToRoot: htmlRoot [
+
+	"Private - When a callback is unmatched (e.g. expired) our tracking strategy responds with a 401 error. 
+	The following ever handler then matches this and redirects to the expired page, forcing a full-page refresh
+	This is necessary to avoid Unpoly only updating the target fragment of the originating button/link"
+
+	htmlRoot addScript: 
+('up.on(''up:request:loaded'', function (event) {
+  if (event.response.status === 401) {
+    // Close any layers
+up.layer.dismissOverlays();
+    // Force Unpoly to do a full reload
+window.location.reload(true);
+window.location = ''<1s>''
+  }
+})' expandMacrosWith: self decoratedComponent expiredSessionUrl)
+]
+
 { #category : 'rendering' }
-UpLayerHostDecoration >> renderContentOn: html [
+UpRootComponentDecoration >> renderContentOn: html [
 
 	self 
 		renderLayerOpenedFunctionOn: html;
@@ -16,7 +35,7 @@ UpLayerHostDecoration >> renderContentOn: html [
 ]
 
 { #category : 'rendering' }
-UpLayerHostDecoration >> renderLayerCancelledFunctionOn: html [
+UpRootComponentDecoration >> renderLayerCancelledFunctionOn: html [
 
 	| function script |
 
@@ -34,7 +53,7 @@ UpLayerHostDecoration >> renderLayerCancelledFunctionOn: html [
 ]
 
 { #category : 'rendering' }
-UpLayerHostDecoration >> renderLayerClosedFunctionOn: html [
+UpRootComponentDecoration >> renderLayerClosedFunctionOn: html [
 
 	| function script |
 
@@ -52,7 +71,7 @@ UpLayerHostDecoration >> renderLayerClosedFunctionOn: html [
 ]
 
 { #category : 'rendering' }
-UpLayerHostDecoration >> renderLayerOpenedFunctionOn: html [
+UpRootComponentDecoration >> renderLayerOpenedFunctionOn: html [
 
 	| function script |
 
@@ -67,4 +86,20 @@ UpLayerHostDecoration >> renderLayerOpenedFunctionOn: html [
 	
 	function add: script.
 	html script: function
+]
+
+{ #category : 'updating' }
+UpRootComponentDecoration >> updateRoot: htmlRoot [
+
+	super updateRoot: htmlRoot.
+
+	"Use Unpoly for all links and forms"
+	htmlRoot 
+		addScript: 'up.link.config.followSelectors.push(''a[href]'')';
+		addScript: 'up.link.config.noInstantSelectors.push(''a[href]'')';
+		addScript: 'up.form.config.submitSelectors.push([''form''])'.
+
+	self decoratedComponent shouldDisableUnpolyCaching ifTrue: [htmlRoot addScript: 'up.network.config.autoCache = function(request) {return false}'].
+
+	self addUnauthorizedRequestHandlerToRoot: htmlRoot
 ]

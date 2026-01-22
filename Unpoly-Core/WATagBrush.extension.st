@@ -115,7 +115,18 @@ WATagBrush >> upFlashes: aBoolean [
 ]
 
 { #category : '*Unpoly-Core' }
+WATagBrush >> upFollow [
+
+	"By default Unpoly following is used for all applicable links and form submissions - see UpRootComponent>>updateRoot:"
+
+	^self attributeAt: 'up-follow' ifAbsent: [true]
+]
+
+{ #category : '*Unpoly-Core' }
 WATagBrush >> upFollow: aBoolean [
+
+	"By default Unpoly following is used for all applicable links and form submissions - see UpRootComponent>>updateRoot:
+	Only need to send this to opt out of Unpoly following"
 
 	self attributeAt: 'up-follow' put: aBoolean asString
 ]

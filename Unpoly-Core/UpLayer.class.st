@@ -57,19 +57,6 @@ UpLayer >> bePopup [
 	self mode: #popup
 ]
 
-{ #category : 'operations' }
-UpLayer >> callOnAnswer: aBlock [
-
-	| session |
-
-	session := self session.
-
-	componentBlock isNil ifFalse: [self component: componentBlock value].
-
-	session addLayer: self.
-	session layerHost call: component onAnswer: aBlock
-]
-
 { #category : 'accessing' }
 UpLayer >> closeEventType [
 
@@ -118,6 +105,7 @@ UpLayer >> configureAnchorTag: aWAAnchorTag [
 
 	aWAAnchorTag
 		upLocation: false;
+		upNoTab: true;  "<- since layers effectively follow call:answer: semantics opening in a new tab rarely makes sense. Idea: allow a non-layered alternative to be specified"
 		upLayer: 'new ', self mode;
 		upDismissEvent: self closeEventType;
 		upOnOpened: self onOpenedSnippet;
@@ -126,7 +114,7 @@ UpLayer >> configureAnchorTag: aWAAnchorTag [
 
 	self upDismissable ifNotNil: [ :value | aWAAnchorTag upDismissable: value].
 	self placeholder ifNotNil: [ :upPlaceholder | aWAAnchorTag upPlaceholder: upPlaceholder].
-	self context isEmpty ifFalse: [aWAAnchorTag upContext: self context upJson].
+	self context isEmpty ifFalse: [aWAAnchorTag upContext: self context asJson].
 
 	aWAAnchorTag callback: [self show]
 ]
@@ -164,22 +152,18 @@ UpLayer >> contextAt: aSymbol [
 { #category : 'accessing' }
 UpLayer >> contextAt: aSymbol ifAbsent: aBlock [
 
-	parent == self ifTrue: [self error: 'loop detected'].
-
 	^self context at: aSymbol ifAbsent: 
-		[self parent isNil 
-			ifTrue: [aBlock value]
-			ifFalse: [self parent contextAt: aSymbol ifAbsent: aBlock]]
+		[self parentLayer
+			ifNil: [aBlock value]
+			ifNotNil: [ :parentLayer | parentLayer contextAt: aSymbol ifAbsent: aBlock]]
 ]
 
 { #category : 'accessing' }
 UpLayer >> contextAt: aSymbol ifPresent: aBlock [
 
-	parent == self ifTrue: [self error: 'loop detected'].
-
 	self context at: aSymbol ifPresent: [ :val | ^aBlock value: val].
 
-	^self parent isNil ifFalse: [self parent contextAt: aSymbol ifPresent: aBlock]
+	^self parentLayer ifNotNil: [ :parentLayer | parentLayer contextAt: aSymbol ifPresent: aBlock]
 ]
 
 { #category : 'accessing' }
@@ -327,6 +311,12 @@ UpLayer >> parent: anObject [
 ]
 
 { #category : 'accessing' }
+UpLayer >> parentLayer [
+
+	^self parent layer
+]
+
+{ #category : 'accessing' }
 UpLayer >> placeholder [
 
 	"A reference to a component to be shown as a placeholder in this layer whilst it is opening.
@@ -350,11 +340,15 @@ UpLayer >> show [
 	"Show this layer with the configured component.
 	When the layer is closed evaluate resultBlock (if not nil) with the closing event"
 
-	self callOnAnswer: 
+	componentBlock isNil ifFalse: [self component: componentBlock value].
+
+	self session addLayer: self.
+
+	self topComponent call: component onAnswer: 
 		[ :answer || closeEvent | 
 		"If #answer: was invoked in response to the layer being dismissed (e.g. user clicked X button) then answer will be the actual dismissal event.
 		If newComponent invoked #answer: itself then we must trigger an event to close the layer"
- 		(answer isKindOf: UpEvent)
+		(answer isKindOf: UpEvent)
 		ifTrue: 
 			[closeEvent := answer]
 		ifFalse: 
@@ -365,7 +359,15 @@ UpLayer >> show [
 					yourself].
 
 		onClosed isNil ifFalse: [onClosed value: closeEvent].
-		closeEvent isDismissal ifFalse: [self requestContext respond: [ :response | response upEvent: closeEvent]]] 
+		closeEvent isDismissal ifFalse: [self requestContext respond: [ :response | response upEvent: closeEvent]]]
+]
+
+{ #category : 'accessing' }
+UpLayer >> topComponent [
+
+	^self parentLayer
+		ifNil: [self parent]
+		ifNotNil: [ :parentLayer | parentLayer topComponent]
 ]
 
 { #category : 'accessing' }

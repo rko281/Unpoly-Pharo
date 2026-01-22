@@ -244,7 +244,7 @@ UpEvent >> writeRelaxedJsonOn: aStream [
 
 	self properties keysAndValuesDo: 
 		[ :key :value |
-		([value upJson] on: Error do: [ :exc | exc return: nil]) ifNotNil: 
+		([value asJson] on: Error do: [ :exc | exc return: nil]) ifNotNil: 
 			[ :json |
 			aStream 
 				nextPut: $,;
