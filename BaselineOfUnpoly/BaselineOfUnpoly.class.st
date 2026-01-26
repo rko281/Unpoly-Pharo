@@ -16,9 +16,9 @@ BaselineOfUnpoly >> baseline: spec [
 			seasideExtras: spec.
 
 		spec
-			package: 'Unpoly-Core' with: [ spec requires: #('Bootstrap5-Core' 'SeasideExtras-Bootstrap' 'SeasideExtras-Javascript') ];
+			package: 'Unpoly-Core' with: [ spec requires: #('Bootstrap5-Core' 'Seaside3-default' 'SeasideExtras-Bootstrap' 'SeasideExtras-Javascript') ];
 			package: 'Unpoly-Placeholders' with: [ spec requires: #('Unpoly-Core') ];
-			package: 'Unpoly-Examples' with: [ spec requires: #('Unpoly-Placeholders' 'Seaside3-Welcome' ) ].
+			package: 'Unpoly-Examples' with: [ spec requires: #('Unpoly-Placeholders'  ) ].
 
 		spec
 			group: 'Core' with: #('Unpoly-Core');
@@ -40,7 +40,7 @@ BaselineOfUnpoly >> seaside: spec [
 
 	spec
 		baseline: 'Seaside3' with: [ spec repository: 'github://SeasideSt/Seaside:master/repository' ];
-		project: 'Seaside3-Welcome' copyFrom: 'Seaside3' with: [ spec loads: #( 'Welcome' ) ]
+		project: 'Seaside3-default' copyFrom: 'Seaside3' with: [ spec loads: #( 'Default' ) ]
 ]
 
 { #category : 'baselines' }
