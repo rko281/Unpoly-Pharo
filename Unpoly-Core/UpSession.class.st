@@ -4,7 +4,8 @@ Class {
 	#instVars : [
 		'layers',
 		'layerCount',
-		'notification'
+		'notification',
+		'currentLayer'
 	],
 	#category : 'Unpoly-Core',
 	#package : 'Unpoly-Core'
@@ -32,11 +33,42 @@ UpSession >> createContinuationCache [
 		overflowAction: WAHashCache removeRelativeOldest
 ]
 
+{ #category : 'accessing' }
+UpSession >> currentLayer [
+
+	^currentLayer contents
+]
+
+{ #category : 'accessing' }
+UpSession >> currentLayer: anUpLayerOrNil [
+
+	currentLayer contents: anUpLayerOrNil
+]
+
+{ #category : 'accessing' }
+UpSession >> currentLayerState [
+
+	^currentLayer
+]
+
+{ #category : 'handling' }
+UpSession >> handleFiltered: aRequestContext [ 
+
+	"Select the requested layer"
+	aRequestContext request isGet ifTrue: 
+		[(aRequestContext request upContext ifNotNil: [ :ctx | ctx at: 'layerId' ifAbsent: [nil]])
+			ifNil: [self currentLayer: nil]
+			ifNotNil: [ :layerId | self currentLayer: (self layerWithId: layerId)]].
+
+	^super handleFiltered: aRequestContext 
+]
+
 { #category : 'initialization' }
 UpSession >> initialize [
 
 	super initialize.
 
+	currentLayer := WAValueHolder new.
 	layers := OrderedCollection new.
 	layerCount := 0
 ]
@@ -48,9 +80,9 @@ UpSession >> initializeFilters [
 ]
 
 { #category : 'accessing' }
-UpSession >> layerWithID: aString [
+UpSession >> layerWithId: aString [
 
-	^self layers detect: [ :each | each id = aString]
+	^self layers detect: [ :each | each id = aString] ifNone: [nil]
 ]
 
 { #category : 'accessing' }

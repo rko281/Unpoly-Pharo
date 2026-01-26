@@ -88,24 +88,24 @@ UpEvent >> isDismissal [
 UpEvent >> layer [
 
 	^layer ifNil: 
-		[self propertyAt: #layerID ifPresent: 
+		[self propertyAt: #layerId ifPresent: 
 			[ :id | 
-			layer := self session layerWithID: id]]
+			layer := self session layerWithId: id]]
 ]
 
 { #category : 'accessing' }
 UpEvent >> layer: anUpLayerOrNil [
 
 	(layer := anUpLayerOrNil) isNil
-		ifTrue: [self propertyAt: #layer put: nil; propertyAt: #layerID put: nil]
-		ifFalse: [self propertyAt: #layer put: 'current' "we only support events on the current layer"; propertyAt: #layerID put: layer id]
+		ifTrue: [self propertyAt: #layer put: nil; propertyAt: #layerId put: nil]
+		ifFalse: [self propertyAt: #layer put: 'current' "we only support events on the current layer"; propertyAt: #layerId put: layer id]
 ]
 
 { #category : 'accessing' }
-UpEvent >> layerID [
+UpEvent >> layerId [
 
 	^layer isNil 
-		ifTrue: [self propertyAt: #layerID ifAbsent: [nil]]
+		ifTrue: [self propertyAt: #layerId ifAbsent: [nil]]
 		ifFalse: [layer id]
 ]
 

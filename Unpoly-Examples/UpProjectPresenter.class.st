@@ -35,6 +35,5 @@ UpProjectPresenter >> viewCompany [
 	self show: (UpCompanyPresenter on: self model company) onAnswer: 
 		[ :result | 
 		result = #deleted ifTrue: 
-			[self database removeCompany: self model company.
-			self answer]]
+			[self database removeCompany: self model company]]
 ]

@@ -7,11 +7,13 @@ Class {
 		'componentBlock',
 		'component',
 		'context',
-		'parent',
+		'parentComponent',
+		'parentLayer',
 		'placeholder',
 		'onClosed',
 		'onClosedReload',
-		'upDismissable'
+		'upDismissable',
+		'isOpen'
 	],
 	#category : 'Unpoly-Core',
 	#package : 'Unpoly-Core'
@@ -43,6 +45,14 @@ UpLayer class >> popup [
 	^self new 
 		bePopup;
 		yourself
+]
+
+{ #category : 'event handling' }
+UpLayer >> _onLayerClosed: anUpEvent [
+
+	isOpen := false.
+	parentLayer := nil. 
+	onClosed isNil ifFalse: [onClosed value: anUpEvent]
 ]
 
 { #category : 'initialization' }
@@ -78,8 +88,7 @@ UpLayer >> component: anObject [
 	"The component to be shown in this layer.
 	Either set directly or generated from the componentBlock each time the layer is opened"
 
-	component := anObject.
-	component addDecoration: (UpLayerDecoration new layer: self)
+	component := anObject
 ]
 
 { #category : 'accessing' }
@@ -101,7 +110,9 @@ UpLayer >> componentBlock: aBlock [
 ]
 
 { #category : 'operations' }
-UpLayer >> configureAnchorTag: aWAAnchorTag [
+UpLayer >> configureAnchorTag: aWAAnchorTag in: anUpComponent [
+
+	parentComponent := anUpComponent.
 
 	aWAAnchorTag
 		upLocation: false;
@@ -153,9 +164,9 @@ UpLayer >> contextAt: aSymbol [
 UpLayer >> contextAt: aSymbol ifAbsent: aBlock [
 
 	^self context at: aSymbol ifAbsent: 
-		[self parentLayer
-			ifNil: [aBlock value]
-			ifNotNil: [ :parentLayer | parentLayer contextAt: aSymbol ifAbsent: aBlock]]
+		[parentLayer isNil
+			ifTrue: [aBlock value]
+			ifFalse: [parentLayer contextAt: aSymbol ifAbsent: aBlock]]
 ]
 
 { #category : 'accessing' }
@@ -163,7 +174,7 @@ UpLayer >> contextAt: aSymbol ifPresent: aBlock [
 
 	self context at: aSymbol ifPresent: [ :val | ^aBlock value: val].
 
-	^self parentLayer ifNotNil: [ :parentLayer | parentLayer contextAt: aSymbol ifPresent: aBlock]
+	^parentLayer isNil ifFalse: [parentLayer contextAt: aSymbol ifPresent: aBlock]
 ]
 
 { #category : 'accessing' }
@@ -177,7 +188,7 @@ UpLayer >> contextAt: aSymbol put: aStringOrNil [
 { #category : 'accessing' }
 UpLayer >> id [
 
-	^id ifNil: [self contextAt: #layerID ifAbsent: [nil]]
+	^id ifNil: [self contextAt: #layerId ifAbsent: [nil]]
 ]
 
 { #category : 'accessing' }
@@ -186,7 +197,7 @@ UpLayer >> id: anObject [
 	id := anObject.
 
 	"Also store in the context"
-	self contextAt: #layerID put: anObject
+	self contextAt: #layerId put: anObject
 ]
 
 { #category : 'initialization' }
@@ -194,7 +205,14 @@ UpLayer >> initialize [
 
 	super initialize.
 
-	context := Dictionary new
+	context := Dictionary new.
+	isOpen := false
+]
+
+{ #category : 'testing' }
+UpLayer >> isOpen [
+
+	^isOpen
 ]
 
 { #category : 'accessing' }
@@ -221,6 +239,18 @@ UpLayer >> mode: aSymbol [
 		#cover	An overlay covering the entire screen"
 
 	mode := aSymbol
+]
+
+{ #category : 'accessing' }
+UpLayer >> onAnswer: aBlock [
+
+	"A Block to be evaluated when the receiver's component answers.
+	The single argument is the answer: argument.
+
+	If the layer is dismissed no answer is sent, the same as if the component was in a tab which was closed.
+	To additionally respond to dismissals (or otherwise interrogate the close event or layer) use onClosed: "
+
+	self onClosed: [ :closeEvent | closeEvent isDismissal ifFalse: [aBlock value: closeEvent value]]
 ]
 
 { #category : 'accessing' }
@@ -279,8 +309,7 @@ UpLayer >> onErrorSnippet [
 { #category : 'event handling' }
 UpLayer >> onLayerClosed: anUpEvent [
 
-	self parent: nil.
-	self component answer: anUpEvent.
+	self isOpen ifTrue: [self _onLayerClosed: anUpEvent].
 
 	anUpEvent respond: self onClosedReload
 ]
@@ -298,22 +327,6 @@ UpLayer >> onOpenedSnippet [
 	This calls the layer close handler defined in UpLayerHostDecoration - this notifies the server which in turn sets the current layer id"
 
 	^'upLayerOpened(event)'
-]
-
-{ #category : 'accessing' }
-UpLayer >> parent [
-	^parent
-]
-
-{ #category : 'accessing' }
-UpLayer >> parent: anObject [
-	parent := anObject
-]
-
-{ #category : 'accessing' }
-UpLayer >> parentLayer [
-
-	^self parent layer
 ]
 
 { #category : 'accessing' }
@@ -337,37 +350,35 @@ UpLayer >> placeholder: aString [
 { #category : 'operations' }
 UpLayer >> show [
 
-	"Show this layer with the configured component.
-	When the layer is closed evaluate resultBlock (if not nil) with the closing event"
+	"Show this layer with the configured component. 
+	When the component answers close the layer on the client"
 
 	componentBlock isNil ifFalse: [self component: componentBlock value].
 
-	self session addLayer: self.
+	parentLayer := self session currentLayer.
+	self session addLayer: self; currentLayer: self.
+	isOpen := true.
 
 	self topComponent call: component onAnswer: 
-		[ :answer || closeEvent | 
-		"If #answer: was invoked in response to the layer being dismissed (e.g. user clicked X button) then answer will be the actual dismissal event.
-		If newComponent invoked #answer: itself then we must trigger an event to close the layer"
-		(answer isKindOf: UpEvent)
-		ifTrue: 
-			[closeEvent := answer]
-		ifFalse: 
-			[closeEvent := 
-				(UpEvent type: self closeEventType)
-					layer: self;
-					value: answer;
-					yourself].
+		[ :answer || closeEvent |
+		closeEvent := 
+			(UpEvent type: self closeEventType)
+				layer: self;
+				value: answer;
+				yourself.
 
-		onClosed isNil ifFalse: [onClosed value: closeEvent].
-		closeEvent isDismissal ifFalse: [self requestContext respond: [ :response | response upEvent: closeEvent]]]
+		self _onLayerClosed: closeEvent.
+
+		"Raise the event on the client to close the layer"
+		self requestContext respond: [ :response | response upEvent: closeEvent]]
 ]
 
 { #category : 'accessing' }
 UpLayer >> topComponent [
 
-	^self parentLayer
-		ifNil: [self parent]
-		ifNotNil: [ :parentLayer | parentLayer topComponent]
+	^parentLayer isNil
+		ifTrue: [parentComponent]
+		ifFalse: [parentLayer topComponent]
 ]
 
 { #category : 'accessing' }

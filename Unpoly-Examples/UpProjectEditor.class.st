@@ -45,7 +45,7 @@ UpProjectEditor >> nameSuggester [
 
 	^UpLayer popup
 		containing: UpNameSuggester new;
-		onClosed: [ :event | self onNameSuggesterClosed: event];
+		onAnswer: [ :name | self model name: name];
 		onClosedReload: '#name-field';
 		yourself
 ]
@@ -59,12 +59,6 @@ UpProjectEditor >> newCompanyLayer [
 		onClosed: [ :event | self onNewCompanyEditorClosed: event];
 		onClosedReload: '#company';
 		yourself
-]
-
-{ #category : 'event handling' }
-UpProjectEditor >> onNameSuggesterClosed: anUpEvent [
-
-	anUpEvent isDismissal ifFalse: [self model name: anUpEvent value]
 ]
 
 { #category : 'event handling' }

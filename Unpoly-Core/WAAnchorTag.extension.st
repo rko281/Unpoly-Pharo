@@ -18,8 +18,7 @@ WAAnchorTag >> showLayer: anUpLayer in: anUpComponent [
 
 	anUpLayer 
 		id: self session nextLayerId;
-		parent: anUpComponent;
-		configureAnchorTag: self
+		configureAnchorTag: self in: anUpComponent
 ]
 
 { #category : '*Unpoly-Core' }

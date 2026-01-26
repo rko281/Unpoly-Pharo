@@ -1,9 +1,6 @@
 Class {
 	#name : 'UpComponent',
 	#superclass : 'SBSComponent',
-	#instVars : [
-		'parent'
-	],
 	#category : 'Unpoly-Core',
 	#package : 'Unpoly-Core'
 }
@@ -68,26 +65,12 @@ UpComponent >> initialize [
 ]
 
 { #category : 'testing' }
-UpComponent >> isInLayer [
-
-	^self layerDecoration notNil
-]
-
-{ #category : 'testing' }
 UpComponent >> isRoot [
 
 	"Am I a root application?
 	Default - if I can be a root, I am"
 
 	^self class canBeRoot
-]
-
-{ #category : 'accessing' }
-UpComponent >> layer [
-
-	"Answer the UpLayer in which the receiver exists or nil if none"
-
-	^self layerDecoration ifNotNil: [ :layerDecoration | layerDecoration layer]
 ]
 
 { #category : 'accessing' }
@@ -99,28 +82,9 @@ UpComponent >> layerContextAt: aSymbol [
 { #category : 'accessing' }
 UpComponent >> layerContextAt: aSymbol ifAbsent: aBlock [
 
-	^self layer 
+	^self session currentLayer
 		ifNil: [aBlock value]
 		ifNotNil: [ :layer | layer contextAt: aSymbol ifAbsent: aBlock]
-]
-
-{ #category : 'accessing' }
-UpComponent >> layerDecoration [
-
-	"Answer the UpLayerDecoration wrapping the receiver (either directly or in its parent hierarchy) or nil if none"
-
-	^self decoration upLayerDecoration ifNil: 
-		[parent isNil ifFalse: [parent layerDecoration]]
-]
-
-{ #category : 'rendering' }
-UpComponent >> renderWithContext: aRenderContext [
-
-	"UpComponents need to traverse their parents for later detection"
-
-	parent := aRenderContext upCurrentComponent.
-	aRenderContext upCurrentComponent: self.
-	[super renderWithContext: aRenderContext] ensure: [aRenderContext upCurrentComponent: parent]
 ]
 
 { #category : 'rendering' }
@@ -149,17 +113,17 @@ UpComponent >> shouldDisableUnpolyCaching [
 ]
 
 { #category : 'delegation' }
-UpComponent >> show: aComponent onAnswer: aBlock delegation: aDelegation [
+UpComponent >> show: aComponent onAnswer: aBlock [
 
-	self layer ifNotNil: [ :layer | aComponent addDecoration: (UpLayerDecoration new layer: layer)].
+	self session currentLayer ifNotNil: [ :layer | layer component: aComponent].
 
-	^super show: aComponent onAnswer: aBlock delegation: aDelegation
+	^super show: aComponent onAnswer: aBlock
 ]
 
-{ #category : 'accessing' }
-UpComponent >> upLayerDecoration [
+{ #category : 'hooks' }
+UpComponent >> states [
 
-	"Polymorphic with WADecoration"
+	"Include the current layer state. Subclass implementations must super send this message"
 
-	^nil
+	^{self session currentLayerState}
 ]

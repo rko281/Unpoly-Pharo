@@ -5,29 +5,12 @@ Class {
 	#package : 'Unpoly-Core'
 }
 
-{ #category : 'updating' }
-UpRootComponentDecoration >> addUnauthorizedRequestHandlerToRoot: htmlRoot [
-
-	"Private - When a callback is unmatched (e.g. expired) our tracking strategy responds with a 401 error. 
-	The following ever handler then matches this and redirects to the expired page, forcing a full-page refresh
-	This is necessary to avoid Unpoly only updating the target fragment of the originating button/link"
-
-	htmlRoot addScript: 
-('up.on(''up:request:loaded'', function (event) {
-  if (event.response.status === 401) {
-    // Close any layers
-up.layer.dismissOverlays();
-    // Force Unpoly to do a full reload
-window.location.reload(true);
-window.location = ''<1s>''
-  }
-})' expandMacrosWith: self decoratedComponent expiredSessionUrl)
-]
-
 { #category : 'rendering' }
 UpRootComponentDecoration >> renderContentOn: html [
 
 	self 
+		renderUnauthorizedRequestHandlerOn: html;
+		renderUpConfigOn: html;
 		renderLayerOpenedFunctionOn: html;
 		renderLayerClosedFunctionOn: html;
 		renderLayerCancelledFunctionOn: html;
@@ -45,7 +28,7 @@ UpRootComponentDecoration >> renderLayerCancelledFunctionOn: html [
 	script 
 		fetchCallback: [ :string | self session onLayerClosed: (UpEvent fromResponseString: string)]
 		then: '(response => response.text()).then(toReload => {if (toReload !== '''') {up.reload(toReload)}})'
-		values: {html javascript alias: '[''type'',''cancelled'',''layerID'',id]'}
+		values: {html javascript alias: '[''type'',''cancelled'',''layerId'',id]'}
 		method: 'POST'.
 	
 	function add: script.
@@ -88,18 +71,51 @@ UpRootComponentDecoration >> renderLayerOpenedFunctionOn: html [
 	html script: function
 ]
 
-{ #category : 'updating' }
-UpRootComponentDecoration >> updateRoot: htmlRoot [
+{ #category : 'rendering' }
+UpRootComponentDecoration >> renderUnauthorizedRequestHandlerOn: html [
 
-	super updateRoot: htmlRoot.
+	"Private - When a callback is unmatched (e.g. expired) our tracking strategy responds with a 401 error. 
+	The following ever handler then matches this and redirects to the expired page, forcing a full-page refresh
+	This is necessary to avoid Unpoly only updating the target fragment of the originating button/link"
+
+	| stream |
+
+	stream := JSStream new.
+
+	stream
+		nextPutAll: 'up.on(''up:request:loaded'', function (event) {
+  if (event.response.status === 401) {
+    // Close any layers
+up.layer.dismissOverlays();
+    // Force Unpoly to do a full reload
+window.location.reload(true);
+window.location = '''; 
+		nextPutAll: self decoratedComponent expiredSessionUrl;
+		nextPutAll: ''' } })'.
+
+	html script: 
+		(html javascript
+			add: stream;
+			yourself)
+]
+
+{ #category : 'rendering' }
+UpRootComponentDecoration >> renderUpConfigOn: html [
+
+	| stream |
+
+	stream := JSStream new.
 
 	"Use Unpoly for all links and forms"
-	htmlRoot 
-		addScript: 'up.link.config.followSelectors.push(''a[href]'')';
-		addScript: 'up.link.config.noInstantSelectors.push(''a[href]'')';
-		addScript: 'up.form.config.submitSelectors.push([''form''])'.
+	stream
+		nextPutAll: 'up.link.config.followSelectors.push(''a[href]'');';
+		nextPutAll: 'up.link.config.noInstantSelectors.push(''a[href]'');';
+		nextPutAll: 'up.form.config.submitSelectors.push([''form'']);'.
 
-	self decoratedComponent shouldDisableUnpolyCaching ifTrue: [htmlRoot addScript: 'up.network.config.autoCache = function(request) {return false}'].
+	self decoratedComponent shouldDisableUnpolyCaching ifTrue: [stream nextPutAll: 'up.network.config.autoCache = function(request) {return false};'].
 
-	self addUnauthorizedRequestHandlerToRoot: htmlRoot
+	html script: 
+		(html javascript
+			add: stream;
+			yourself)
 ]

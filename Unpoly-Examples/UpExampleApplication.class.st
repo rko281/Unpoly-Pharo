@@ -98,7 +98,7 @@ UpExampleApplication >> presenterLayerFor: aModel [
 			[self exampleWait. 
 			self presenterClass on: aModel];
 		placeholder: self presenterClass asPlaceholder;
-		onClosed: [ :closeEvent | self onPresenterClosed: closeEvent model: closeEvent layer component model];
+		onAnswer: [ :result | result = #deleted ifTrue: [self delete: aModel]];
 		onClosedReload: '.table';
 		yourself
 ]

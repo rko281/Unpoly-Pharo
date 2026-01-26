@@ -1,18 +1,6 @@
 Extension { #name : 'WARenderContext' }
 
 { #category : '*Unpoly-Core' }
-WARenderContext >> upCurrentComponent [
-
-	^self properties at: #upCurrentComponent ifAbsent: [nil]
-]
-
-{ #category : '*Unpoly-Core' }
-WARenderContext >> upCurrentComponent: anUpComponent [
-
-	self properties at: #upCurrentComponent put: anUpComponent
-]
-
-{ #category : '*Unpoly-Core' }
 WARenderContext >> upOverrideRendererClass [
 
 	^self properties at: #upOverrideRendererClass ifAbsent: [nil]

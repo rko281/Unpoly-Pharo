@@ -210,7 +210,7 @@ UpExamplesBrowser >> renderToolbarOn: html [
 { #category : 'accessing' }
 UpExamplesBrowser >> states [
 
-	^{currentExample}
+	^super states, {currentExample}
 ]
 
 { #category : 'hooks' }
